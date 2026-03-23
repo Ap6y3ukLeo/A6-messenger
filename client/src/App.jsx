@@ -111,7 +111,7 @@ function ProfileView({ username, isMe, onClose, updateProfileTrigger }) {
       <div className="profile-card" onClick={e => e.stopPropagation()}>
         <button className="close-modal" onClick={onClose}>×</button>
         <div className="profile-avatar-main">
-          <img src={info.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" />
+          <img src={info.avatar_url} alt="avatar" />
           {isMe && <label className="change-avatar-label">📷<input type="file" hidden onChange={onAvatarChange}/></label>}
         </div>
         <div className="profile-info-section">
@@ -333,7 +333,7 @@ function ChatScreen({ user, activeChat, setActiveChat, logout }) {
       <div className="sidebar">
         <div className="side-header" onClick={() => setMyProfileOpen(true)}>
           <div className="avatar-container">
-            <img src={myInfo.avatar_url || 'https://via.placeholder.com/150'} alt="me" />
+            <img src={myInfo.avatar_url} alt="me" />
           </div>
           <div className="user-nick-box">
             <b className="display-name">{myInfo.display_name || user}</b>
