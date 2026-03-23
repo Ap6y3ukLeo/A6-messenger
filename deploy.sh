@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Скрипт деплоя мессенджера на VPS (Ubuntu/Debian)
-# Запускать от имени root или сsudo
+# Запускать от имени root или sudo
 
 set -e
 
@@ -14,7 +14,6 @@ NC='\033[0m'
 # Настройки (измените эти переменные)
 DOMAIN="your-domain.com"  # Ваш домен или IP
 PORT=3000
-CLIENT_DIR="dist"
 
 # Обновление системы
 echo -e "${GREEN}1. Обновление системы...${NC}"
@@ -32,9 +31,13 @@ apt install -y nginx
 # Создание директории приложения
 echo -e "${GREEN}4. Создание директории приложения...${NC}"
 mkdir -p /var/www/messenger
+uploads
 cd /var/www/messenger
 
-# Копирование файлов (нужно загрузить проект на сервер через git или scp)
+# Клонирование репозитория
+git clone https://github.com/Ap6y3ukLeo/A6-messenger.git .
+
+# Установка зависимостей
 echo -e "${GREEN}5. Установка зависимостей...${NC}"
 npm install --production
 
@@ -47,16 +50,17 @@ echo -e "${GREEN}7. Настройка Nginx...${NC}"
 cat > /etc/nginx/sites-available/messenger << 'EOF'
 server {
     listen 80;
-    server_name YOUR_DOMAIN_OR_IP;
+    server_name _;
 
-    # Клиент (статика)
+    root /var/www/messenger/client/dist;
+    index index.html;
+
+    # Статика
     location / {
-        root /var/www/messenger/client/dist;
-        index index.html;
         try_files $uri $uri/ /index.html;
     }
 
-    # Прокси API на Node.js сервер
+    # API прокси
     location /api/ {
         proxy_pass http://localhost:3000/;
         proxy_http_version 1.1;
@@ -64,36 +68,28 @@ server {
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
     }
 
-    # Статика загруженных файлов
+    # Загрузки
     location /uploads/ {
         alias /var/www/messenger/uploads/;
     }
 }
 EOF
 
-# Активация сайта
+# Удаление default сайта и активация
+rm -f /etc/nginx/sites-enabled/default
 ln -sf /etc/nginx/sites-available/messenger /etc/nginx/sites-enabled/
 nginx -t
 
 # Перезапуск Nginx
-systemctl restart nginx
+systemctl reload nginx
 
-# Запуск Node.js сервера (через PM2 для автоперезапуска)
+# Запуск Node.js сервера (через PM2)
 echo -e "${GREEN}8. Запуск Node.js сервера...${NC}"
 npm install -g pm2
 pm2 start server.js --name messenger
 pm2 save
-pm2 startup
-
-# Настройка firewall
-echo -e "${GREEN}9. Настройка firewall...${NC}"
-ufw allow 80/tcp
-ufw allow 443/tcp
-ufw allow 22/tcp
-ufw enable
 
 echo -e "${GREEN}=== Деплой завершён! ===${NC}"
 echo "Откройте http://$DOMAIN в браузере"
