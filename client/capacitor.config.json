@@ -1,0 +1,8 @@
+{
+  "appId": "com.messenger.app",
+  "appName": "MyMessenger",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}

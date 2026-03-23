@@ -61,6 +61,7 @@ db.serialize(() => {
         replyToId INTEGER,
         groupId INTEGER,
         status TEXT DEFAULT 'sent',
+        read_status INTEGER DEFAULT 0,
         time DATETIME DEFAULT CURRENT_TIMESTAMP 
     )`);
 
@@ -152,7 +153,15 @@ app.get('/api/dialogs', (req, res) => {
         SELECT DISTINCT 
             u.username as contact, 
             u.display_name, 
-            u.avatar_url 
+            u.avatar_url,
+            (SELECT text FROM messages 
+             WHERE (sender = u.username AND receiver = ?) OR (receiver = u.username AND sender = ?) 
+             ORDER BY id DESC LIMIT 1) as last_message,
+            (SELECT time FROM messages 
+             WHERE (sender = u.username AND receiver = ?) OR (receiver = u.username AND sender = ?) 
+             ORDER BY id DESC LIMIT 1) as last_time,
+            (SELECT COUNT(*) FROM messages 
+             WHERE sender = u.username AND receiver = ? AND status = 'sent') as unread_count
         FROM (
             SELECT sender as name FROM messages WHERE receiver = ?
             UNION
@@ -160,9 +169,17 @@ app.get('/api/dialogs', (req, res) => {
         ) AS contacts
         JOIN users u ON u.username = contacts.name
     `;
-    db.all(sql, [user, user], (err, rows) => {
-        if (err) return res.status(500).json([]);
-        res.json(rows || []);
+    db.all(sql, [user, user, user, user, user, user, user], (err, rows) => {
+        if (err) {
+            console.error('SQL Error:', err);
+            return res.status(500).json([]);
+        }
+        // Добавляем форматирование времени
+        const processed = rows.map(row => ({
+            ...row,
+            last_time: row.last_time ? new Date(row.last_time).toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'}) : null
+        }));
+        res.json(processed || []);
     });
 });
 
@@ -247,9 +264,9 @@ app.post('/api/message-status', (req, res) => {
 // API: Получить непрочитанные сообщения и пометить их как прочитанные
 app.get('/api/mark-read', (req, res) => {
     const { user, fromUser } = req.query;
-    db.run("UPDATE messages SET status = 'read' WHERE sender = ? AND receiver = ? AND status != 'read'", 
+    db.run("UPDATE messages SET status = 'read', read_status = 1 WHERE sender = ? AND receiver = ? AND read_status = 0", 
         [fromUser, user], () => {
-            db.all("SELECT id FROM messages WHERE sender = ? AND receiver = ? AND status != 'read'", 
+            db.all("SELECT id FROM messages WHERE sender = ? AND receiver = ? AND read_status = 0", 
                 [fromUser, user], (err, rows) => res.json({ updated: rows?.length || 0 }));
         });
 });

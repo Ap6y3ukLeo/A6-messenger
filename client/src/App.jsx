@@ -169,7 +169,7 @@ function ChatScreen({ user, activeChat, setActiveChat, logout }) {
     if (force || isAtBottom) {
       container.scrollTo({
         top: container.scrollHeight,
-        behavior: force && lastCountRef.current > 5 ? 'smooth' : 'auto'
+        behavior: 'auto'
       });
     }
   };
@@ -352,14 +352,27 @@ function ChatScreen({ user, activeChat, setActiveChat, logout }) {
           </div>
         </div>
         <div className="contacts-list">
-          {dialogs.map(d => (
-            <div key={d.contact} className={`contact-item ${activeChat === d.contact ? 'active' : ''}`} onClick={() => setActiveChat(d.contact)}>
-              <div className="avatar-container small">
-                {d.avatar_url ? <img src={d.avatar_url} alt="" /> : <div className="avatar-placeholder">{d.contact[0].toUpperCase()}</div>}
+          {dialogs.length === 0 ? (
+            <div style={{padding: '20px', color: '#8e8e93', textAlign: 'center'}}>Нет диалогов</div>
+          ) : (
+            dialogs.map(d => (
+              <div key={d.contact} className={`contact-item ${activeChat === d.contact ? 'active' : ''} ${d.unread_count > 0 ? 'unread' : ''}`} onClick={() => setActiveChat(d.contact)}>
+                <div className="avatar-container small">
+                  {d.avatar_url ? <img src={d.avatar_url} alt="" /> : <div className="avatar-placeholder">{d.contact[0].toUpperCase()}</div>}
+                </div>
+                <div className="contact-info">
+                  <div className="contact-top">
+                    <span className="contact-name">{d.display_name || d.contact}</span>
+                    {d.last_time && <span className="contact-time">{d.last_time}</span>}
+                  </div>
+                  <div className="contact-bottom">
+                    <span className="last-message">{d.last_message || 'Нет сообщений'}</span>
+                    {d.unread_count > 0 && <span className="unread-badge">{d.unread_count}</span>}
+                  </div>
+                </div>
               </div>
-              <span className="contact-name">{d.display_name || d.contact}</span>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 

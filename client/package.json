@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
+    "emoji-picker-react": "^4.16.1",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "emoji-picker-react": "^4.16.1"
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
